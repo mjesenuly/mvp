@@ -103,22 +103,5 @@ The following exact message blocks were supplied from the orchestrator's visible
 **User:** да
 
 **Assistant:** MVP согласован: **клиенты и одобренные администратором мастерские, заявки с фото, сравнение смет, подтверждение новой цены, отслеживание ремонта и история действий**. Вход — email и пароль; интерфейс — английский, цены — в тенге.
-Перед созданием репозитория уточни: **какой GitHub-аккаунт используем и какая точная дата и время дедлайна по Казахстану (UTC+5)?**
 
-**User:** гитхаб аккаунт тот же время дедлайна 14:20
 
-## Orchestrator interpretation (not a user quotation)
-
-Initial interpretation of “same account” was previous-project mjesenuly. Subsequent browser verification showed signed-in nursat7777, so account clarification is pending and no publication identity is assumed. Deadline interpreted as today, 2026-10-20, at 14:20 UTC+5. These observations/interpretations are separate from the exact user answer above.
-
-## Confirmed-decision summary (not verbatim)
-
-The discovery handoff confirms separate customer/workshop email-password accounts; manual admin workshop approval; private owner/approved-workshop requests; immediately visible customer contacts for approved workshops; smartphones/laptops/washing machines with photos; fixed and estimated offers with unknown fees distinct from zero; revised terms requiring customer acceptance before repair, immutable prior terms; workshop ready then customer completes; cancellation only before repair; rejected revision cancels entire request; one active editable/withdrawable offer per workshop before selection; customers see competing offers, workshops cannot see competitors' offers; KZT and English light neutral blue UI. Payments, chat, reviews and maps are excluded. User confirmed same GitHub account and deadline today 2026-10-20 at 14:20 UTC+5.
-
-## Proposed defaults
-
-Three photos at most, 3 MB each with actual type validation; explicit environment-seeded admin; integer money minor units. These technical defaults are not invented user approvals. Selected stack and workflow tradeoffs are in `_docs/architecture.md` and `_docs/process.md`.
-
-## GitHub account clarification continuation
-
-Exact user messages supplied by the orchestrator: “mjesenuly”, then “зашел”. The assistant asked which account to use after observing a different signed-in account and then requested sign-in; those assistant actions are summarized because their exact wording was not supplied. The browser subsequently verified mjesenuly. The earlier exact “гитхаб аккаунт тот же время дедлайна 14:20” answer is preserved above, not fabricated or silently changed.
