@@ -9,13 +9,19 @@
     "test": "vitest run",
     "start": "node --import tsx backend/server.ts",
     "test:api": "node --import tsx --test backend/server.test.ts",
-    "check:contract": "node scripts/check-contract.mjs"
+    "check:contract": "node scripts/check-contract.mjs",
+    "test:storage": "node --import tsx --test backend/sqlite.test.ts",
+    "migrate": "node --import tsx backend/migrate.ts",
+    "test:parity": "node scripts/test-api-sqlite.mjs"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "reflect-metadata": "^0.2.2",
+    "sql.js": "^1.15.1",
+    "typeorm": "^1.1.2"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.0",
