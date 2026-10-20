@@ -8,7 +8,7 @@ GitHub is canonical; local iteration numbers differ from issue numbers because g
 | Bug | [#2](https://github.com/mjesenuly/repairlens/issues/2) | Competitor quote projection | b65a34e | PM grooming comment 6286781146; QA independent original reproduction/retest | QA closed 13:29 UTC+5 |
 | 2 | [#3](https://github.com/mjesenuly/repairlens/issues/3) | OpenAPI contract | 12080ad; ce39fab documentation | a6782d8, qa-02.md; 19-operation check and SwaggerParser 13.1.0 OpenAPI 3.1 validation PASS | QA closed 13:32 UTC+5 |
 | 3 | [#4](https://github.com/mjesenuly/repairlens/issues/4) | In-memory API | 9ae2985 | 5a67153, qa-03.md; 4 HTTP tests, 7 DOM/domain, build/contract and independent API probe PASS | QA closed 13:37 UTC+5 |
-| 4 | [#5](https://github.com/mjesenuly/repairlens/issues/5) | TypeORM SQLite | Not yet recorded | Not yet recorded | Published, pending |
+| 4 | [#5](https://github.com/mjesenuly/repairlens/issues/5) | TypeORM SQLite | c2bd84b | e4c53c9, qa-04.md; storage4/SQLite parity4/memory HTTP4/build and independent autosave-failure rollback probe PASS | QA closed 13:42 UTC+5 |
 | 5 | [#6](https://github.com/mjesenuly/repairlens/issues/6) | Real integration | Not yet recorded | Not yet recorded | Published, pending |
 | 6 | [#7](https://github.com/mjesenuly/repairlens/issues/7) | Running user tests/CI/setup | Not yet recorded | Not yet recorded | Published, pending |
 
