@@ -118,3 +118,7 @@ The discovery handoff confirms separate customer/workshop email-password account
 ## Proposed defaults
 
 Three photos at most, 3 MB each with actual type validation; explicit environment-seeded admin; integer money minor units. These technical defaults are not invented user approvals. Selected stack and workflow tradeoffs are in `_docs/architecture.md` and `_docs/process.md`.
+
+## GitHub account clarification continuation
+
+Exact user messages supplied by the orchestrator: “mjesenuly”, then “зашел”. The assistant asked which account to use after observing a different signed-in account and then requested sign-in; those assistant actions are summarized because their exact wording was not supplied. The browser subsequently verified mjesenuly. The earlier exact “гитхаб аккаунт тот же время дедлайна 14:20” answer is preserved above, not fabricated or silently changed.
