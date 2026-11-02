@@ -1,0 +1,38 @@
+name: RepairLens PostgreSQL verification
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: repairlens_test
+          POSTGRES_USER: repairlens
+          POSTGRES_PASSWORD: disposable-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U repairlens -d repairlens_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://repairlens:disposable-ci-password@127.0.0.1:5432/repairlens_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:postgres
+      - run: npm run test:api
+      - run: npm run test:storage
+      - run: npm run test:parity
+      - run: npm run test:runtime
+      - run: npm run check:contract
