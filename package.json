@@ -13,11 +13,14 @@
     "test:storage": "node --import tsx --test backend/sqlite.test.ts",
     "migrate": "node --import tsx backend/migrate.ts",
     "test:parity": "node scripts/test-api-sqlite.mjs",
-    "test:runtime": "node --import tsx --test backend/runtime.test.ts"
+    "test:runtime": "node --import tsx --test backend/runtime.test.ts",
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "migrate:data": "node --import tsx scripts/migrate-sqlite-to-postgres.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
+    "pg": "^8.23.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "reflect-metadata": "^0.2.2",

@@ -19,6 +19,12 @@ npm ci
 npm run build
 ```
 
+## PostgreSQL deployment storage
+
+The deployment phase adds TypeORM PostgreSQL storage without replacing the approved MVP. See [PostgreSQL setup, safe SQLite transfer, verification and limits](_docs/postgresql.md). Select `STORAGE=postgres` and provide `DATABASE_URL` privately. The existing cached domain is protected by a database session lock: run **one application replica**. Startup runs versioned migrations; a second writer fails rather than overwriting data. `/api/health` checks the live database connection and returns 503 when it is unavailable.
+
+For a disposable real PostgreSQL test database, set `TEST_DATABASE_URL` and run `npm run test:postgres`. That command fails if the database is not configured; it does not substitute SQLite or mocked storage.
+
 ## Real SQLite application on Windows
 
 Run exactly one server against one database file. Choose **one** terminal syntax below. Replace placeholders with your own local admin credentials; the password needs at least 10 characters. Do not commit credentials. Do not set `NODE_ENV=production` for this local HTTP setup, since production cookies require HTTPS.
