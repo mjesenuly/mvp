@@ -1,0 +1,71 @@
+name: RepairLens container verification
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production image
+        run: docker build -t repairlens:verification .
+      - name: Start the image
+        run: >-
+          docker run -d --name repairlens --stop-timeout 20
+          --health-interval 1s --health-start-period 1s
+          -p 127.0.0.1:3000:3000 -e STORAGE=memory repairlens:verification
+      - name: Wait for container health and verify non-root user
+        shell: bash
+        run: |
+          for attempt in {1..40}; do
+            status=$(docker inspect --format '{{.State.Health.Status}}' repairlens)
+            if [ "$status" = healthy ]; then break; fi
+            if [ "$attempt" = 40 ]; then docker logs repairlens; exit 1; fi
+            sleep 1
+          done
+          test "$(docker exec repairlens id -u)" != 0
+      - name: Verify frontend, API, assets and SPA refresh
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const base = 'http://127.0.0.1:3000';
+          const health = await fetch(base + '/api/health');
+          assert.equal(health.status, 200);
+          assert.equal((await health.json()).status, 'ok');
+          const index = await fetch(base + '/');
+          assert.equal(index.status, 200);
+          const html = await index.text();
+          assert.match(html, /RepairLens/);
+          const asset = /src="([^"]+\.js)"/.exec(html)?.[1];
+          assert.ok(asset);
+          assert.equal((await fetch(base + asset)).status, 200);
+          const route = await fetch(base + '/requests/example');
+          assert.equal(route.status, 200);
+          assert.match(route.headers.get('content-type') ?? '', /text\/html/);
+          const missing = await fetch(base + '/api/not-a-route');
+          assert.equal(missing.status, 404);
+          assert.equal((await missing.json()).code, 'NOT_FOUND');
+          console.log('PASS: production image health, frontend, assets, SPA refresh and JSON API 404');
+          JS
+      - name: Verify graceful container shutdown
+        run: |
+          docker stop --time 20 repairlens
+          test "$(docker inspect --format '{{.State.ExitCode}}' repairlens)" = 0
+          docker logs repairlens | grep -F 'RepairLens stopped.'
+      - name: Capture container evidence
+        if: always()
+        run: |
+          mkdir -p container-evidence
+          docker logs repairlens > container-evidence/runtime.log 2>&1 || true
+          docker inspect repairlens > container-evidence/container.json 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-evidence
+          path: container-evidence/
+      - name: Clean up
+        if: always()
+        run: docker rm -f repairlens || true
