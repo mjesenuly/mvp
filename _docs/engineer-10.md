@@ -32,3 +32,7 @@ Node 24.22.1, current workspace:
 ## Pending evidence
 
 This workspace has neither a PostgreSQL server nor Docker. Real PostgreSQL tests have **not yet run here**. Publication must be followed by actual execution of the PostgreSQL GitHub Actions workflow and independent QA before issue closure. The local regression passes are not PostgreSQL verification. No production data migration, cloud deployment, issue closure or remote success is claimed by this engineering handoff.
+
+## QA repair — readiness contract
+
+Independent QA identified that the original OpenAPI health enum omitted PostgreSQL and did not document the new 503 readiness responses. Updated `openapi.yml` to API version 1.1.0 with the three storage modes, distinct successful/unavailable health schemas, and `STORAGE_UNAVAILABLE` responses for every other API operation. Strengthened `scripts/check-contract.mjs` to check these response shapes, modes, status values and examples. Local `npm run check:contract` and `npm run build` passed. Three isolated mutation probes confirmed the checker rejects an omitted PostgreSQL mode, missing API 503 response and incorrect unavailable-health status. The probes used temporary document copies and did not alter the canonical contract.
