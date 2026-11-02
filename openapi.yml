@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RepairLens API",
-    "version": "1.0.0",
-    "description": "Contract iteration precedes backend. Same-origin cookie sessions, CSRF, role projections, immutable accepted quotes and serialized transactional changes. KZT minor units. Server timestamps are authoritative. No payments/chat/reviews."
+    "version": "1.1.0",
+    "description": "Contract iteration precedes backend. Same-origin cookie sessions, CSRF, role projections, immutable accepted quotes and serialized transactional changes. KZT minor units. Server timestamps are authoritative. No payments/chat/reviews. Deployment phase: PostgreSQL storage and fail-closed database readiness are supported."
   },
   "servers": [
     {
@@ -88,6 +88,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": []
@@ -166,6 +180,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -297,6 +325,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [],
@@ -408,6 +450,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -500,6 +556,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -608,6 +678,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": []
@@ -688,6 +772,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -841,6 +939,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -965,6 +1077,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1067,6 +1193,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -1196,6 +1336,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1320,6 +1474,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1422,6 +1590,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -1530,6 +1712,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1632,6 +1828,20 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
                 }
               }
             }
@@ -1740,6 +1950,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1845,6 +2069,20 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1920,6 +2158,20 @@
           },
           "404": {
             "description": "Missing or inaccessible photo"
+          },
+          "503": {
+            "description": "Database writer connection unavailable; no cached workspace is returned and no requested mutation is performed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUnavailableError"
+                },
+                "example": {
+                  "code": "STORAGE_UNAVAILABLE",
+                  "message": "Database connection unavailable; try again after recovery."
+                }
+              }
+            }
           }
         }
       }
@@ -1927,40 +2179,39 @@
     "/api/health": {
       "get": {
         "operationId": "health",
-        "summary": "Health check",
+        "summary": "Check application and selected storage readiness",
         "security": [],
         "responses": {
           "200": {
-            "description": "Running server",
+            "description": "Application and selected storage are ready",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "ok"
-                      ]
-                    },
-                    "storage": {
-                      "type": "string",
-                      "enum": [
-                        "memory",
-                        "sqlite"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "storage"
-                  ],
-                  "additionalProperties": false
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "ok",
+                  "storage": "postgres"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Selected storage is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthUnavailable"
+                },
+                "example": {
+                  "status": "unavailable",
+                  "storage": "postgres"
                 }
               }
             }
           }
-        }
+        },
+        "description": "PostgreSQL checks the pinned writer connection. A failed connection returns 503; the instance must restart rather than serve stale cached state."
       }
     }
   },
@@ -2316,6 +2567,74 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "storage": {
+            "type": "string",
+            "enum": [
+              "memory",
+              "sqlite",
+              "postgres"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "storage"
+        ],
+        "additionalProperties": false
+      },
+      "HealthUnavailable": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unavailable"
+            ]
+          },
+          "storage": {
+            "type": "string",
+            "enum": [
+              "memory",
+              "sqlite",
+              "postgres"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "storage"
+        ],
+        "additionalProperties": false
+      },
+      "StorageUnavailableError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "STORAGE_UNAVAILABLE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "The database writer connection is unavailable. The request is refused before cached workspace data is served."
           }
         },
         "required": [
