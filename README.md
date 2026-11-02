@@ -57,6 +57,35 @@ Real mode has no public admin signup or prefilled customer passwords. Sign in wi
 
 For a separate fictional preview open `http://localhost:3000/?mode=mock`. Its banner clearly says mock; it resets on refresh. Preview accounts are `customer@example.test`, `workshop@example.test`, `admin@example.test`, all using `DemoPass123!`. These are fictional preview credentials, **not real database accounts**. API failures never switch to mock mode.
 
+## Single-container application
+
+The multi-stage `Dockerfile` builds the Vite frontend and serves its static assets from Express in the same image. The runtime installs production dependencies only, runs as the non-root `node` user and checks `/api/health`. `tsx` is a production dependency because the existing backend runs TypeScript directly. No Vite development server runs in the image.
+
+Install Docker Engine or Docker Desktop, then open a terminal inside this project and build:
+
+```sh
+docker build -t repairlens:local .
+```
+
+For a disposable local preview (accounts reset when the container exits):
+
+```sh
+docker run --rm --name repairlens --stop-timeout 20 -p 3000:3000 -e STORAGE=memory -e NODE_ENV=development repairlens:local
+```
+
+Open **http://localhost:3000**. Register customer/workshop accounts normally; workshop approval requires a seeded admin. For the full persistent local demonstration, first create a private `.env` from `.env.example` with your admin credentials, then run:
+
+```sh
+docker volume create repairlens-data
+docker run --rm --name repairlens --stop-timeout 20 -p 3000:3000 --env-file .env -e NODE_ENV=development --mount source=repairlens-data,target=/app/.data repairlens:local
+```
+
+Keep `STORAGE=sqlite` and `DATABASE_FILE=.data/repairlens.sqlite` in that file. The named volume survives ordinary container shutdown. `docker stop --time 20 repairlens` drains active HTTP requests and closes storage. Deleting `repairlens-data` permanently deletes the local demonstration database; ordinary shutdown does not require deleting the volume.
+
+The local commands explicitly select `NODE_ENV=development` because local HTTP cannot use production secure cookies. Hosted deployments must retain the image's production default, use HTTPS, and set `APP_ORIGIN` to the exact public origin. Supply credentials at runtime, never as Docker build arguments. No database is bundled in the image.
+
+The `RepairLens container verification` GitHub Actions workflow builds and runs the actual image, checks its non-root user, health, frontend assets, SPA refresh, JSON API 404 and graceful shutdown, and uploads runtime evidence. A checked-in workflow is not proof of a successful run; see the linked issue and actual Actions execution for results. Locally, `npm run build` followed by `npm run test:runtime` verifies the backend process's equivalent route and shutdown behaviour without claiming Docker execution.
+
 ## Development and verification
 
 After starting the SQLite API, a second terminal can run `npm run dev` and open `http://localhost:5173`; Vite proxies `/api` to port 3000. For the simplest demonstration use the built application at port 3000.

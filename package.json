@@ -12,7 +12,8 @@
     "check:contract": "node scripts/check-contract.mjs",
     "test:storage": "node --import tsx --test backend/sqlite.test.ts",
     "migrate": "node --import tsx backend/migrate.ts",
-    "test:parity": "node scripts/test-api-sqlite.mjs"
+    "test:parity": "node scripts/test-api-sqlite.mjs",
+    "test:runtime": "node --import tsx --test backend/runtime.test.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
@@ -21,6 +22,7 @@
     "react-dom": "^19.1.0",
     "reflect-metadata": "^0.2.2",
     "sql.js": "^1.15.1",
+    "tsx": "^4.23.15",
     "typeorm": "^1.1.2"
   },
   "devDependencies": {
@@ -30,7 +32,6 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "jsdom": "^26.1.0",
-    "tsx": "^4.23.15",
     "typescript": "^5.9.0",
     "vite": "^6.3.0",
     "vitest": "^3.2.4"
