@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-repairlens}
+      POSTGRES_USER: ${POSTGRES_USER:-repairlens}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a private URL-safe POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 30s
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      STORAGE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-repairlens}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-repairlens}
+      DATABASE_SCHEMA: public
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env before first startup}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env before first startup}
+      PORT: "3000"
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      # Local HTTP only. Hosted deployments must override to production and HTTPS.
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+    stop_grace_period: 20s
+volumes:
+  postgres-data:

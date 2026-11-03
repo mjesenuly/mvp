@@ -4,6 +4,8 @@ RepairLens compares structured equipment repair offers and tracks customer-appro
 
 ## Requirements and download
 
+For the deployment assignment, the full PostgreSQL stack now has a [Docker Compose setup guide](_docs/compose.md). Copy `.env.compose.example` to a private `.env`, replace the database/admin placeholders, then run `docker compose up --build`. Open http://localhost:3000. The PostgreSQL database stays on an internal Docker network and survives ordinary restarts. See the guide before running test-only integration journeys or deleting volumes.
+
 Install **Node.js 24 LTS** (includes npm) and optionally Git. Clone:
 
 ```sh

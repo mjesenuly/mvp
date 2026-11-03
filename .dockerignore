@@ -17,3 +17,5 @@ _docs
 scripts
 e2e
 *.log
+.integration-state.json
+compose-evidence

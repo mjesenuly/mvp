@@ -15,7 +15,9 @@
     "test:parity": "node scripts/test-api-sqlite.mjs",
     "test:runtime": "node --import tsx --test backend/runtime.test.ts",
     "test:postgres": "node scripts/test-postgres.mjs",
-    "migrate:data": "node --import tsx scripts/migrate-sqlite-to-postgres.ts"
+    "migrate:data": "node --import tsx scripts/migrate-sqlite-to-postgres.ts",
+    "test:integration": "node scripts/integration.mjs journey",
+    "test:integration:restart": "node scripts/integration.mjs restart"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
