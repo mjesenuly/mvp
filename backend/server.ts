@@ -27,7 +27,16 @@ export async function createApp(options:{repository?:StateRepository;adminEmail?
     const old=structuredClone(state());
     try{await fn(req,res);}catch(e){Object.assign(engine,{accounts:old.accounts,requests:old.requests,offers:old.offers,seq:old.seq});sessions=old.sessions;throw e;}
    };
-   if(repository.withExclusive)return repository.withExclusive(execute);
+   if(repository.withExclusive){
+    // The locking layer checks writer availability before invoking execute.
+    // Translate storage failure to HTTP 503, not a domain-level 404.
+    try{return await repository.withExclusive(execute);}
+    catch(error){
+     if(error instanceof Error && /PostgreSQL writer connection is unavailable|database connection unavailable|connection terminated|connection is closed|query runner already released/i.test(error.message))
+      fail(503,'STORAGE_UNAVAILABLE','Database connection unavailable; try again after recovery.');
+     throw error;
+    }
+   }
    return execute();
   }).catch(next);
  };
