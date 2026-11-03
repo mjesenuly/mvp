@@ -19,7 +19,7 @@
 ## CI/CD release gate
 - [release-gate.yml](../.github/workflows/release-gate.yml) verifies that the same commit SHA passed five workflows: backend, container, Compose, PostgreSQL, Playwright.
 - Optional deployment requires repository Actions secret `RENDER_DEPLOY_HOOK`. Without it, the gate performs **no deployment**.
-- Existing Render `render.yaml` has automatic deployment on commits, independent of GitHub Actions. To enforce a **strict** test-gated release, disable Render auto-deploy in the Render dashboard and configure its deploy hook secret. Until then, do not claim all deployments are gated.
+- The Render Blueprint and dashboard have auto-deploy disabled. The release gate is manually triggered to avoid concurrent releases, and checks that the exact commit passed the required CI workflows. Do not claim an end-to-end successful release until Render reports Live for the same commit.
 - GitHub workflow success means the hook was accepted, not that a subsequent hosted rollout was healthy. Check Render health separately.
 
 ## Requirement status
@@ -33,6 +33,15 @@
 | Live Render demo | User-verified |
 | AWS CloudFormation infrastructure as code | Added, not deployed |
 | AWS production-grade deployment | Not completed; requires account, security hardening and billing authorization |
-| Test-gated CD | Gate added; needs Render hook and auto-deploy disabled |
+| Test-gated CD | Manual release gate is configured; post-deploy health/commit verification is pending |
 
 Do not present the last two items as completed deployments.
+
+## November 3: Render handoff fix — awaiting live validation
+- Prior rolling deployments failed due to session-wide writer lock, followed by repeated shutdowns from the handoff notification protocol.
+- Reworked PostgreSQL to acquire advisory lock only during initial migration and each HTTP operation; HTTP requests refresh the persisted snapshot before handling them to avoid cross-instance lost updates.
+- Added a PostgreSQL regression test for two simultaneously running HTTP API instances and concurrent registrations with cross-instance sessions.
+- The current production database must not be reset, dropped, or manually edited to address deploy failures.
+- No claim of deployment success should be made until the new code passes PostgreSQL CI, all five checks pass for the **same** SHA, and Render shows the exact commit Live with /api/health returning postgres.
+- Any retry of a failed deploy should be investigated from Render logs before triggering another. This code path is designed for a brief first handoff from the older single-writer version to the concurrent-safe version.
+- AWS/GCP production account deployment remains unperformed and is not covered by this Render fix.
