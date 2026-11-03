@@ -19,7 +19,8 @@
     "test:integration": "node scripts/integration.mjs journey",
     "test:integration:restart": "node scripts/integration.mjs restart",
     "test:e2e": "playwright test",
-    "test:e2e:list": "playwright test --list"
+    "test:e2e:list": "playwright test --list",
+    "test:e2e:diagnostic": "node scripts/e2e-local-diagnostic.mjs"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
