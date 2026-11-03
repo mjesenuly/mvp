@@ -1,9 +1,9 @@
 import { test, expect } from './helpers';
-import { prepareJourney, currentRepair } from './journey';
+import { prepareJourney, currentRepair, openJourney } from './journey';
 test('issue 30: customer approves revised terms before repair can start', async ({ browser }, info) => {
  const j=await prepareJourney(browser,info,'revised');
  try {
-  const page=await j.customer.newPage();await page.goto('/');
+  const page=await j.customer.newPage();await openJourney(page,j);
   await expect(page.getByRole('heading',{name:'New terms need your approval'})).toBeVisible();
   await page.getByRole('button',{name:'Accept revised terms'}).click();
   await expect(page.getByText('Changes saved.')).toBeVisible();
