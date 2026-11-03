@@ -23,7 +23,7 @@ test('issue 21: another customer cannot browse the first customer\'s repair requ
     await expect(outsiderPage.getByText(model)).toHaveCount(0);
     expect((await (await api(outsider, 'GET', '/api/requests')).json()).requests).toEqual([]);
     const forbidden = await api(outsider, 'POST', `/api/requests/${requestId}/cancel`, {});
-    expect(forbidden.status()).toBe(403);
+    expect(forbidden.status()).toBe(404); // Non-owners receive a non-disclosing not-found response.
   } finally {
     await owner.close();
     await outsider.close();
