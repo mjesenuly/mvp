@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { test as base, expect, type Browser, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 
 const runId = (process.env.E2E_RUN_ID ?? randomUUID()).replace(/[^a-z0-9-]/gi, '').slice(0, 40);
@@ -19,7 +19,8 @@ export const test = base.extend<{ healthyStack: void }>({
 export { expect };
 
 export function identity(info: TestInfo, role: Identity['role'], suffix = ''): Identity {
-  const token = `${runId}-${info.workerIndex}-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-15)}-${suffix || role}`;
+  const testHash = createHash('sha256').update(info.testId).digest('hex').slice(0, 20);
+  const token = `${runId}-${info.workerIndex}-${testHash}-${suffix || role}`;
   return { name: `E2E ${role} ${token}`, email: `${token}@example.test`, password: 'BrowserFixturePass123!', role, contact: '+7 700 123 4567' };
 }
 
