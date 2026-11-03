@@ -1,6 +1,6 @@
 # Playwright feature coverage plan
 
-**Status: PLANNED.** This PM document does not claim that tests exist, ran, passed, or that issues are closed. GitHub Issues are the canonical backlog. Implement one selected issue at a time after its predecessor passes independent QA; issue #11 is currently the Compose prerequisite. Update the evidence column only from actual executions.
+**Status: PARTIAL IMPLEMENTATION.** Registration issue 16 has a browser test implementation and a successful explicitly local SQLite diagnostic; required real PostgreSQL/Compose execution and independent QA are recorded separately. Remaining feature rows are still planned. This document does not claim issue closure. GitHub Issues are the canonical backlog. Implement one selected issue at a time after its predecessor passes independent QA; issue #11 is currently the Compose prerequisite. Update the evidence column only from actual executions.
 
 The approved interface is in `frontend/src/App.tsx`; the same-origin transport is in `frontend/src/api-service.ts`. Existing DOM tests and Node HTTP tests provide useful cases, but they are not Playwright browser evidence.
 
@@ -10,7 +10,7 @@ Each row is a separate real GitHub Issue labelled `e2e-test`. The proposed filen
 
 | Issue | Feature | Proposed test file | Browser acceptance target and negative cases | Evidence |
 | --- | --- | --- | --- | --- |
-| [16](https://github.com/mjesenuly/mvp/issues/16) | Account registration | `e2e/16-registration.spec.ts` | Submit customer and workshop registration forms; verify customer workspace versus pending approval. Check required/invalid fields, duplicate email, and absence of public admin role. Supplement with actual API rejection of `role: admin`. | Planned |
+| [16](https://github.com/mjesenuly/mvp/issues/16) | Account registration | `e2e/16-registration.spec.ts` | Submit customer and workshop registration forms; verify customer workspace versus pending approval. Check required/invalid fields, duplicate email, and absence of public admin role. Supplement with actual API rejection of `role: admin`. | Implemented; local browser/SQLite diagnostic 5/5 PASS. Real PostgreSQL/Compose CI and independent QA pending. |
 | [17](https://github.com/mjesenuly/mvp/issues/17) | Sign-in and session restoration | `e2e/17-sign-in.spec.ts` | Sign in using the form, reload and retain the same account. Wrong password produces the real server error and no private workspace. | Planned |
 | [18](https://github.com/mjesenuly/mvp/issues/18) | Logout | `e2e/18-logout.spec.ts` | Click `Sign out`; reload stays signed out. A retained pre-logout cookie must no longer access protected API routes. | Planned |
 | [19](https://github.com/mjesenuly/mvp/issues/19) | Workshop approval | `e2e/19-workshop-approval.spec.ts` | Pending workshop sees approval screen; admin approves the intended workshop card; workshop checks approval status and sees workspace. Supplement with actual non-admin approval rejection. | Planned |
