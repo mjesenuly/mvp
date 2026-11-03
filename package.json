@@ -17,7 +17,9 @@
     "test:postgres": "node scripts/test-postgres.mjs",
     "migrate:data": "node --import tsx scripts/migrate-sqlite-to-postgres.ts",
     "test:integration": "node scripts/integration.mjs journey",
-    "test:integration:restart": "node scripts/integration.mjs restart"
+    "test:integration:restart": "node scripts/integration.mjs restart",
+    "test:e2e": "playwright test",
+    "test:e2e:list": "playwright test --list"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
@@ -31,6 +33,7 @@
     "typeorm": "^1.1.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@testing-library/react": "^16.3.0",
     "@types/express": "^5.0.6",
     "@types/node": "^24.0.0",

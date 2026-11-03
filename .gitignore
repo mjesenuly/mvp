@@ -6,3 +6,5 @@ coverage/
 *.sqlite
 .integration-state.json
 compose-evidence/
+playwright-report/
+test-results/
