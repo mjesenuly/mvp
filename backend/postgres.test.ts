@@ -110,3 +110,47 @@ test('real HTTP account/session/request persist through PostgreSQL adapter and a
     assert.equal((await fetch(base() + '/api/session', { headers: { Cookie: cookie } })).status, 503);
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); await backend.close(); await h.cleanup(); }
 });
+
+test('two simultaneous HTTP instances share PostgreSQL without losing registrations', async () => {
+  const h = await isolatedPostgres();
+  const other = await PostgresRepository.open(h.url, h.schema);
+  const first = await createApp({ repository: h.repository });
+  const second = await createApp({ repository: other });
+  const listen = (app: typeof first.app) => new Promise<Server>(resolve => {
+    const server = app.listen(0, '127.0.0.1', () => resolve(server));
+  });
+  const firstServer = await listen(first.app);
+  const secondServer = await listen(second.app);
+  const origin = (server: Server) => `http://127.0.0.1:${(server.address() as {port: number}).port}`;
+  const register = (server: Server, email: string) => fetch(origin(server) + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: email, email, password: 'ValidPassword123!',
+      role: 'customer', contact: '+7 fictional',
+    }),
+  });
+  try {
+    const [a, b] = await Promise.all([
+      register(firstServer, 'first@example.test'),
+      register(secondServer, 'second@example.test'),
+    ]);
+    assert.equal(a.status, 200);
+    assert.equal(b.status, 200);
+    const state = (await h.repository.withExclusive(() => h.repository.load()))!;
+    assert.deepEqual(state.accounts.map(account => account.email).sort(), [
+      'first@example.test', 'second@example.test',
+    ]);
+    for (const server of [firstServer, secondServer]) {
+      const result = await (await fetch(origin(server) + '/api/session')).json();
+      assert.equal(result.accounts?.length, 2);
+    }
+  } finally {
+    await Promise.all([firstServer, secondServer].map(server =>
+      new Promise<void>(resolve => server.close(() => resolve())),
+    ));
+    await first.close();
+    await second.close();
+    await h.cleanup();
+  }
+});
