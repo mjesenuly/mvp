@@ -8,6 +8,8 @@ test('issue 32: selected workshop starts accepted repair', async ({ browser }, i
   await expect(page.getByText('Changes saved.')).toBeVisible();
   const state=await currentRepair(j.customer,j.requestId);
   expect(state.repair.status).toBe('in_repair');
-  await page.reload();await expect(page.getByRole('button',{name:'Mark ready for collection'})).toBeVisible();
+  await page.reload();
+  await page.locator('.request-card').filter({ hasText: j.model }).click();
+  await expect(page.getByRole('button',{name:'Mark ready for collection'})).toBeVisible();
  }finally{await j.close();}
 });
