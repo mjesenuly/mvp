@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test as base, expect, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
+import { test as base, expect, type Browser, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 
 const runId = (process.env.E2E_RUN_ID ?? randomUUID()).replace(/[^a-z0-9-]/gi, '').slice(0, 40);
 export const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
@@ -54,4 +54,27 @@ export async function api(context: BrowserContext, method: string, route: string
     csrf = (await session.json()).csrfToken;
   }
   return context.request.fetch(route, { method, data, headers: csrf ? { 'X-CSRF-Token': csrf } : {} });
+}
+
+/** Prepare only an account through a separate real API session. Revoke that
+ * session before the test's independent browser performs the sign-in action. */
+export async function seedAccount(browser: Browser, account: Identity) {
+  const seed = await browser.newContext({ baseURL });
+  try {
+    const response = await api(seed, 'POST', '/api/auth/register', account);
+    expect(response.status()).toBe(200);
+    const user = (await response.json()).me as { id: string; email: string; role: string };
+    expect((await api(seed, 'POST', '/api/auth/logout', {})).status()).toBe(200);
+    return user;
+  } finally { await seed.close(); }
+}
+
+export async function signInUI(page: Page, account: Pick<Identity, 'email' | 'password'>) {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Welcome back', exact: true })).toBeVisible();
+  await page.getByLabel('Email', { exact: true }).fill(account.email);
+  await page.getByLabel('Password', { exact: true }).fill(account.password);
+  const response = page.waitForResponse(r => r.url().endsWith('/api/auth/login') && r.request().method() === 'POST');
+  await page.locator('form').getByRole('button', { name: 'Sign in', exact: true }).click();
+  return response;
 }
