@@ -3,14 +3,13 @@ import { DataSource, type QueryRunner } from 'typeorm';
 import { InitialRepairLens1760950000000, repairEntities } from './sqlite';
 import type { StateRepository, StoredState } from './repository';
 
-/** The existing domain caches whole aggregates. A session lock deliberately
- * permits one application writer, rather than silently losing cross-process writes. */
+/** Whole-state persistence uses a request-scoped PostgreSQL advisory lock
+ * and a fresh snapshot before each HTTP operation to avoid lost updates. */
 export class PostgresRepository implements StateRepository {
   readonly kind = 'postgres' as const;
   private available = true;
-  private handoff?: () => void;
-  onHandoff(callback: () => void) { this.handoff = callback; }
-  private constructor(public db: DataSource, private runner: QueryRunner) {}
+  private schema: string;
+  private constructor(public db: DataSource, private runner: QueryRunner, schema: string) { this.schema = schema; }
 
   static async open(url: string, schema = 'public') {
     if (!/^postgres(?:ql)?:\/\//.test(url)) throw new Error('A PostgreSQL DATABASE_URL is required.');
@@ -26,51 +25,60 @@ export class PostgresRepository implements StateRepository {
       const client = await runner.connect();
       // The dedicated client must never be transparently replaced: its session
       // owns the advisory lock. A connection error permanently fails this instance.
-      const repository = new PostgresRepository(db, runner);
+      const repository = new PostgresRepository(db, runner, schema);
       client.on('error', () => { repository.available = false; });
-      const [lock] = await runner.query(
-        'SELECT pg_try_advisory_lock(hashtext(current_database()), hashtext($1)) AS acquired',
-        [`repairlens:${schema}`],
-      );
-      if (!lock.acquired) {
-        // Render starts the replacement before stopping the live instance. In
-        // handoff mode, ask the old writer to drain and release its session lock.
-        // Never bypass the lock: the application caches complete aggregates.
-        if (process.env.RENDER_DEPLOY_HANDOFF === '1') {
-          await runner.query('SELECT pg_notify($1, $2)', ['repairlens_writer_handoff', schema]);
-          const deadline = Date.now() + 75000;
-          let acquired = false;
-          while (Date.now() < deadline) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const [retry] = await runner.query(
-              'SELECT pg_try_advisory_lock(hashtext(current_database()), hashtext($1)) AS acquired',
-              [`repairlens:${schema}`],
-            );
-            if (retry.acquired) { acquired = true; break; }
+      // Hold the legacy writer lock only during startup/migrations. The old
+      // single-writer deployment responds to this notice by draining and exiting.
+      // New deployments share the database using a short, request-scoped lock.
+      let acquired = false;
+      const deadline = Date.now() + 75000;
+      while (!acquired && Date.now() < deadline) {
+        const [lock] = await runner.query(
+          'SELECT pg_try_advisory_lock(hashtext(current_database()), hashtext($1)) AS acquired',
+          [`repairlens:${schema}`],
+        );
+        acquired = lock.acquired;
+        if (!acquired) {
+          if (process.env.RENDER_DEPLOY_HANDOFF === '1') {
+            await runner.query('SELECT pg_notify($1, $2)', ['repairlens_writer_handoff', schema]);
           }
-          if (!acquired) throw new Error('Timed out waiting for previous RepairLens writer to release its PostgreSQL lock.');
-        } else {
-          throw new Error('Another RepairLens writer already owns this database/schema.');
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
+      if (!acquired) throw new Error('Timed out waiting for legacy RepairLens writer lock.');
       await runner.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
       // TypeORM migration operations use the configured schema; this search path
       // also keeps raw readiness queries and future migration SQL predictable.
       await runner.query(`SET search_path TO "${schema}"`);
       await db.runMigrations({ transaction: 'all' });
-      if (process.env.RENDER_DEPLOY_HANDOFF === '1') {
-        client.on('notification', (message: { channel: string; payload?: string }) => {
-          if (message.channel === 'repairlens_writer_handoff' && message.payload === schema) {
-            repository.handoff?.();
-          }
-        });
-        await runner.query('LISTEN repairlens_writer_handoff');
-      }
+      await runner.query('SELECT pg_advisory_unlock(hashtext(current_database()), hashtext($1))', [`repairlens:${schema}`]);
       return repository;
     } catch (error) {
       await runner.release().catch(() => {});
       await db.destroy();
       throw error;
+    }
+  }
+
+  /**
+   * Every HTTP request refreshes the database-backed aggregates while holding
+   * this session advisory lock. Multiple deployments can overlap without
+   * clobbering writes made by another instance.
+   */
+  async withExclusive<T>(work: () => Promise<T>): Promise<T> {
+    await this.ready();
+    const key = `repairlens:${this.schema}`;
+    await this.runner.query(
+      'SELECT pg_advisory_lock(hashtext(current_database()), hashtext($1))',
+      [key],
+    );
+    try {
+      return await work();
+    } finally {
+      await this.runner.query(
+        'SELECT pg_advisory_unlock(hashtext(current_database()), hashtext($1))',
+        [key],
+      ).catch(() => { this.available = false; });
     }
   }
 
