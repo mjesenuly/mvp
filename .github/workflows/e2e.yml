@@ -1,0 +1,46 @@
+name: RepairLens Playwright E2E
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: repairlens-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_BASE_URL: http://localhost:3000
+      E2E_RUN_ID: run-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install the actual Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Validate Compose and start the built app with real PostgreSQL
+        run: |
+          docker compose --env-file .env.test config --quiet
+          docker compose --env-file .env.test up --build --detach --wait --wait-timeout 180
+      - name: Run Playwright against the real full stack
+        run: npm run test:e2e
+      - name: Capture runtime evidence
+        if: always()
+        run: |
+          mkdir -p test-results/runtime
+          docker compose --env-file .env.test ps --all > test-results/runtime/services.txt
+          docker compose --env-file .env.test logs --no-color > test-results/runtime/runtime.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - name: Remove only this disposable CI stack
+        if: always()
+        run: docker compose --env-file .env.test down --volumes --remove-orphans
