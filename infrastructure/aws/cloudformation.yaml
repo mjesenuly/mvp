@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RepairLens Compose demo; creates potentially billable EC2 and EBS resources.
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t2.micro]
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  AdminEmail:
+    Type: String
+  AdminPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+Resources:
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RepairLens HTTP demo only; no SSH or database access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+  Host:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds: [!Ref WebSecurityGroup]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          dnf install -y docker git
+          systemctl enable --now docker
+          mkdir -p /opt/repairlens
+          cd /opt/repairlens
+          git clone --depth 1 https://github.com/mjesenuly/mvp.git .
+          ARCH=$(uname -m)
+          curl -fsSL "https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-linux-$ARCH" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          POSTGRES_PASSWORD=$(openssl rand -hex 32)
+          TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')
+          PUBLIC_IP=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
+          cat > .env <<EOF
+          POSTGRES_DB=repairlens
+          POSTGRES_USER=repairlens
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          ADMIN_EMAIL=${AdminEmail}
+          ADMIN_PASSWORD=${AdminPassword}
+          PORT=3000
+          APP_BIND_ADDRESS=0.0.0.0
+          APP_ORIGIN=http://$PUBLIC_IP:3000
+          NODE_ENV=development
+          EOF
+          chmod 600 .env
+          /usr/local/bin/docker-compose --env-file .env up -d --build --wait
+Outputs:
+  DemoURL:
+    Description: HTTP only; NOT production grade.
+    Value: !Sub 'http://${Host.PublicIp}:3000'
+  Notice:
+    Value: Delete the CloudFormation stack to stop instance and storage charges.
