@@ -18,6 +18,8 @@ services:
         value: "3000"
       - key: DATABASE_SCHEMA
         value: public
+      - key: RENDER_DEPLOY_HANDOFF
+        value: "1"
       - key: DATABASE_URL
         fromDatabase:
           name: repairlens-postgres
