@@ -1,0 +1,48 @@
+name: RepairLens release gate
+on:
+  workflow_run:
+    workflows:
+      - RepairLens Playwright E2E
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  release-gate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all five successful CI workflows for one commit
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.eventName === 'workflow_dispatch'
+              ? context.sha : context.payload.workflow_run.head_sha;
+            const required = [
+              'RepairLens verification',
+              'RepairLens container verification',
+              'RepairLens Compose integration',
+              'RepairLens PostgreSQL verification',
+              'RepairLens Playwright E2E',
+            ];
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              head_sha: sha, per_page: 100
+            });
+            for (const name of required) {
+              const passing = runs.some(run => run.name === name && run.conclusion === 'success' && run.head_sha === sha);
+              if (!passing) core.setFailed(`Missing successful ${name} for ${sha}`);
+            }
+            core.setOutput('sha', sha);
+      - name: Deploy only if a Render deploy hook is explicitly configured
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK not configured; gated release is verified but no deployment is triggered."
+            exit 0
+          fi
+          curl --fail --show-error --silent --retry 2 --request POST "$RENDER_DEPLOY_HOOK"
+          echo "Render deploy hook accepted; verify the resulting Render deployment separately."
