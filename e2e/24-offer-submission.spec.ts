@@ -1,9 +1,9 @@
 import { test, expect } from './helpers';
-import { prepareJourney, fixedTerms, currentRepair } from './journey';
+import { prepareJourney, fixedTerms, currentRepair, openJourney } from './journey';
 test('issue 24: approved workshop submits a quote visible to the customer', async ({ browser }, info) => {
  const j=await prepareJourney(browser,info,'request');
  try {
-  const page=await j.workshop.newPage();await page.goto('/');
+  const page=await j.workshop.newPage();await openJourney(page,j);
   await expect(page.getByRole('heading',{name:'Find your next repair'})).toBeVisible();
   await page.getByRole('button',{name:'Send an offer'}).click();
   await expect(page.getByRole('heading',{name:'Your repair offer'})).toBeVisible();
