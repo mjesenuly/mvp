@@ -18,6 +18,7 @@ Parameters:
     Type: String
     NoEcho: true
     MinLength: 12
+    Description: Demo-only credential; EC2 user data is not a secret store.
 Resources:
   WebSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -46,7 +47,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          set -euxo pipefail
+          set -euo pipefail
           dnf install -y docker git
           systemctl enable --now docker
           mkdir -p /opt/repairlens
