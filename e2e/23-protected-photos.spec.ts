@@ -16,7 +16,7 @@ test('issue 23: uploaded repair photos are private to the request owner', async 
   const repair = ownerData.requests.find((r: { model: string }) => r.model === 'Photo Protected');
   expect(repair.photos).toHaveLength(1);
   const photo = repair.photos[0];
-  expect(photo.url).toMatch(/^\\/api\\/photos\\//);
+  expect(photo.url.startsWith('/api/photos/')).toBe(true);
   expect(photo.url).not.toContain('base64');
   const visible = await api(context, 'GET', photo.url);
   expect(visible.status()).toBe(200);
