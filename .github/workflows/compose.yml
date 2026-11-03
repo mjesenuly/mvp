@@ -1,0 +1,47 @@
+name: RepairLens Compose integration
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: repairlens-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      BASE_URL: http://127.0.0.1:3000
+      INTEGRATION_STATE_FILE: .integration-state.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate Compose configuration without printing secrets
+        run: docker compose --env-file .env.test config --quiet
+      - name: Build and start the real app and PostgreSQL
+        run: docker compose --env-file .env.test up --build --detach --wait --wait-timeout 180
+      - name: Verify external full-stack integration
+        run: npm run test:integration
+      - name: Stop and restart application and database without deleting data
+        run: |
+          docker compose --env-file .env.test stop app db
+          docker compose --env-file .env.test up --detach --wait --wait-timeout 120
+      - name: Verify persistent data and sessions after restart
+        run: npm run test:integration:restart
+      - name: Capture safe runtime evidence
+        if: always()
+        run: |
+          mkdir -p compose-evidence
+          docker compose --env-file .env.test ps --all > compose-evidence/services.txt
+          docker compose --env-file .env.test logs --no-color > compose-evidence/runtime.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compose-evidence
+          path: compose-evidence/
+      - name: Delete this run's explicitly disposable CI stack and volume
+        if: always()
+        run: |
+          docker compose --env-file .env.test down --volumes --remove-orphans
+          rm -f .integration-state.json
