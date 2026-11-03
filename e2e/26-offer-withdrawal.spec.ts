@@ -7,8 +7,10 @@ test('issue 26: withdrawn quote disappears from customer comparison', async ({ b
   await page.getByRole('button',{name:'Withdraw offer'}).click();
   await expect(page.getByText('Changes saved.')).toBeVisible();
   const state=await currentRepair(j.customer,j.requestId);
-  expect(state.data.offers).toHaveLength(0);
+  expect(state.data.offers.filter((offer: { withdrawn?: boolean }) => !offer.withdrawn)).toHaveLength(0);
+  expect(state.data.offers.find((offer: { id: string }) => offer.id === j.offerId)?.withdrawn).toBe(true);
   await page.reload();
+  await page.locator('.request-card').filter({ hasText: j.model }).click();
   await expect(page.getByRole('button',{name:'Send an offer'})).toBeVisible();
  }finally{await j.close();}
 });
