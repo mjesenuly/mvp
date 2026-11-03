@@ -1,9 +1,9 @@
 import { test, expect } from './helpers';
-import { prepareJourney, currentRepair, fixedTerms } from './journey';
+import { prepareJourney, currentRepair, fixedTerms, openJourney } from './journey';
 test('issue 29: selected workshop proposes a revision that blocks starting work', async ({ browser }, info) => {
  const j=await prepareJourney(browser,info,'accepted');
  try {
-  const page=await j.workshop.newPage();await page.goto('/');
+  const page=await j.workshop.newPage();await openJourney(page,j);
   await page.getByRole('button',{name:'Propose revised terms'}).click();
   await expect(page.getByRole('heading',{name:'Propose revised terms'})).toBeVisible();
   await page.getByLabel('Work included').fill('Revised scope with new part');
