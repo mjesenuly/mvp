@@ -20,7 +20,7 @@ export { expect };
 
 export function identity(info: TestInfo, role: Identity['role'], suffix = ''): Identity {
   const testHash = createHash('sha256').update(info.testId).digest('hex').slice(0, 20);
-  const token = `${runId}-${info.workerIndex}-${testHash}-${suffix || role}`;
+  const token = `${runId}-${info.workerIndex}-${testHash}-${role}${suffix ? `-${suffix}` : ''}`;
   return { name: `E2E ${role} ${token}`, email: `${token}@example.test`, password: 'BrowserFixturePass123!', role, contact: '+7 700 123 4567' };
 }
 
