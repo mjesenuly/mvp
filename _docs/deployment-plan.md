@@ -1,6 +1,6 @@
 # RepairLens deployment assignment
 
-Current user-confirmed deadline: **3 November 2026, 14:30 UTC+5**. Repository: https://github.com/mjesenuly/mvp. This continues the completed MVP; its genuine discovery and implementation history remain intact.
+Current user-confirmed deadline: **3 November 2026, 14:00 UTC+5**. Repository: https://github.com/mjesenuly/mvp. This continues the completed MVP; its genuine discovery and implementation history remain intact.
 
 ## Canonical backlog
 
