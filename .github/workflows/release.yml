@@ -1,0 +1,95 @@
+name: RepairLens release gate and CD
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: repairlens-production-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Frontend, backend, contract and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:contract
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:api
+      - run: npm run test:storage
+      - run: npm run test:parity
+      - run: npm run test:runtime
+
+  full-stack:
+    name: PostgreSQL, Compose, integration, restart and Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      COMPOSE_PROJECT_NAME: repairlens-release-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_BASE_URL: http://localhost:3000
+      E2E_RUN_ID: release-${{ github.run_id }}-${{ github.run_attempt }}
+      BASE_URL: http://127.0.0.1:3000
+      INTEGRATION_STATE_FILE: .integration-state.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start actual Docker Compose app and PostgreSQL
+        run: |
+          docker compose --env-file .env.test config --quiet
+          docker compose --env-file .env.test up --build --detach --wait --wait-timeout 180
+      - run: npm run test:e2e
+      - run: npm run test:integration
+      - name: Verify state survives full stack restart
+        run: |
+          docker compose --env-file .env.test stop app db
+          docker compose --env-file .env.test up --detach --wait --wait-timeout 120
+          npm run test:integration:restart
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-acceptance-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - name: Remove disposable CI containers and volumes
+        if: always()
+        run: |
+          docker compose --env-file .env.test down --volumes --remove-orphans
+          rm -f .integration-state.json
+
+  deploy:
+    name: Redeploy configured production service
+    needs: [verify, full-stack]
+    runs-on: ubuntu-latest
+    environment: production
+    # Production is deliberately opt-in: there is no confirmed free cloud
+    # target or deploy hook at the time this workflow was authored.
+    if: ${{ github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true' }}
+    steps:
+      - name: Require privately configured production deploy hook
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          test -n "$DEPLOY_WEBHOOK_URL" || { echo "::error::DEPLOY_WEBHOOK_URL is not configured"; exit 1; }
+          curl --silent --show-error --fail --retry 3 --max-time 40 \
+            --request POST \
+            --header "X-RepairLens-Commit: ${{ github.sha }}" \
+            "$DEPLOY_WEBHOOK_URL"
+      - name: Explicit confirmation of trigger, not production health
+        run: echo "Deploy hook accepted. Verify the public HTTPS health endpoint and running release separately."
