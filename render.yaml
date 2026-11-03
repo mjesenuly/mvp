@@ -8,7 +8,9 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
-    autoDeployTrigger: commit
+    # Single-writer PostgreSQL requires controlled deployment until concurrent
+    # runtime storage is implemented. Avoid Blueprint-triggered overlapping deploys.
+    autoDeployTrigger: off
     envVars:
       - key: STORAGE
         value: postgres
