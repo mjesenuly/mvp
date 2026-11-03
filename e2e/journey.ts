@@ -14,6 +14,7 @@ export type Journey = {
   customerIdentity: Identity;
   workshopIdentity: Identity;
   requestId: string;
+  model: string;
   offerId?: string;
   close: () => Promise<void>;
 };
@@ -35,14 +36,15 @@ export async function prepareJourney(browser: Browser, info: TestInfo, through: 
     })).status()).toBe(200);
     expect((await api(admin, 'POST', `/api/admin/workshops/${workshopUser.id}/approve`, {})).status()).toBe(200);
 
+    const model = `Journey-${customerIdentity.email.split('@')[0].slice(-26)}`;
     const created = await api(customer, 'POST', '/api/requests', {
-      category: 'Laptop', brand: 'Lenovo', model: 'Journey Test', fault: 'No power', city: 'Almaty',
+      category: 'Laptop', brand: 'Lenovo', model, fault: 'No power', city: 'Almaty',
     });
     expect(created.status()).toBe(200);
     const state = await (await api(customer, 'GET', '/api/requests')).json();
-    const repair = state.requests.find((r: { model: string }) => r.model === 'Journey Test');
+    const repair = state.requests.find((r: { model: string }) => r.model === model);
     expect(repair).toBeTruthy();
-    const journey: Journey = { customer, workshop, admin, customerIdentity, workshopIdentity, requestId: repair.id, close };
+    const journey: Journey = { customer, workshop, admin, customerIdentity, workshopIdentity, requestId: repair.id, model, close };
     if (through !== 'request') {
       expect((await api(workshop, 'POST', `/api/requests/${repair.id}/offers`, { terms: fixedTerms() })).status()).toBe(200);
       const offers = (await (await api(customer, 'GET', '/api/requests')).json()).offers;
@@ -69,4 +71,9 @@ export async function currentRepair(context: BrowserContext, requestId: string) 
   expect(response.status()).toBe(200);
   const data = await response.json();
   return { data, repair: data.requests.find((r: { id: string }) => r.id === requestId) };
+}
+
+export async function openJourney(page: import('@playwright/test').Page, journey: Journey) {
+  await page.goto('/');
+  await page.locator('.request-card').filter({ hasText: journey.model }).click();
 }
