@@ -10,7 +10,7 @@ test('issue 20: customer creates a request using the real browser form', async (
   const uniqueModel = `E2E-${info.workerIndex}-${Date.now()}`;
   await page.getByRole('button', { name: '+ New request' }).click();
   await expect(page.getByRole('heading', { name: 'Describe your device' })).toBeVisible();
-  await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Laptop' });
+  await page.locator('form select[name="category"]').selectOption({ label: 'Laptop' });
   await page.getByLabel('City', { exact: true }).fill('Almaty');
   await page.getByLabel('Brand', { exact: true }).fill('E2EBrand');
   await page.getByLabel('Model', { exact: true }).fill(uniqueModel);
