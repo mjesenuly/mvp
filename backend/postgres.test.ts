@@ -141,10 +141,17 @@ test('two simultaneous HTTP instances share PostgreSQL without losing registrati
     assert.deepEqual(state.accounts.map(account => account.email).sort(), [
       'first@example.test', 'second@example.test',
     ]);
-    for (const server of [firstServer, secondServer]) {
-      const result = await (await fetch(origin(server) + '/api/session')).json();
-      assert.equal(result.accounts?.length, 2);
-    }
+    // Sessions created on either instance are valid on the other instance.
+    const firstCookie = a.headers.get('set-cookie')!.split(';')[0];
+    const secondCookie = b.headers.get('set-cookie')!.split(';')[0];
+    const firstOnSecond = await (await fetch(origin(secondServer) + '/api/session', {
+      headers: { Cookie: firstCookie },
+    })).json();
+    const secondOnFirst = await (await fetch(origin(firstServer) + '/api/session', {
+      headers: { Cookie: secondCookie },
+    })).json();
+    assert.equal(firstOnSecond.me.email, 'first@example.test');
+    assert.equal(secondOnFirst.me.email, 'second@example.test');
   } finally {
     await Promise.all([firstServer, secondServer].map(server =>
       new Promise<void>(resolve => server.close(() => resolve())),
