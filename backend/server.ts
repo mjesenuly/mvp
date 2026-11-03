@@ -44,6 +44,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   const timeout=setTimeout(()=>{console.error('Graceful shutdown timed out.');process.exit(1);},15000);timeout.unref();
   listener.close(async error=>{try{await server.close();if(error)throw error;clearTimeout(timeout);console.log('RepairLens stopped.');process.exitCode=0;}catch(error){console.error('Shutdown failed:',error);process.exitCode=1;}});
  };
+ if ('onHandoff' in server.repository && typeof server.repository.onHandoff === 'function') {
+  (server.repository.onHandoff as (callback: () => void) => void)(shutdown);
+ }
  process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);
  listener.once('error',async error=>{console.error('Server failed:',error);await server.close();process.exitCode=1;});
 } 
