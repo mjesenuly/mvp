@@ -25,7 +25,7 @@ const fixture = (): StoredState => {
 };
 const canonical = (state: StoredState | null) => state && { ...state, accounts: [...state.accounts].sort((a, b) => a.id.localeCompare(b.id)) };
 
-test('PostgreSQL migrations, singleton lock, rollback and restart preserve complete state', async () => {
+test('PostgreSQL migrations, multiple connections, rollback and restart preserve complete state', async () => {
   const h = await isolatedPostgres();
   let repository = h.repository;
   try {
@@ -33,7 +33,22 @@ test('PostgreSQL migrations, singleton lock, rollback and restart preserve compl
     assert.equal(await repository.db.showMigrations(), false);
     const state = fixture();
     await repository.save(state);
-    await assert.rejects(PostgresRepository.open(h.url, h.schema), /Another RepairLens writer/);
+    // Independent instances can connect concurrently without holding a
+    // session-wide lock across an entire Render rollout.
+    const other = await PostgresRepository.open(h.url, h.schema);
+    try {
+      assert.deepEqual(canonical(await other.load()), canonical(state));
+      const account = { ...state.accounts[0], id: 'another-user', email: 'other@example.test' };
+      await other.withExclusive(async () => {
+        const latest = (await other.load())!;
+        await other.save({ ...latest, accounts: [...latest.accounts, account] });
+      });
+      await repository.withExclusive(async () => {
+        const latest = (await repository.load())!;
+        assert.ok(latest.accounts.some(a => a.id === 'another-user'));
+        await repository.save(state);
+      });
+    } finally { await other.close(); }
     await assert.rejects(repository.save({ ...state, accounts: [...state.accounts, { ...state.accounts[0], id: 'duplicate' }] }));
     assert.deepEqual(canonical(await repository.load()), canonical(state));
     await assert.rejects(repository.save({ ...state, offers: [...state.offers, { ...state.offers[0], id: 'duplicate-offer' }] }));
