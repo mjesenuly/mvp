@@ -1,24 +1,37 @@
 name: RepairLens release gate
-# Manual deployment approval is required while the PostgreSQL adapter is
-# single-writer. CI remains automatic in the five verification workflows.
+
 on:
+  workflow_run:
+    workflows: [RepairLens Playwright E2E]
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
+
 concurrency:
   group: repairlens-production-release
   cancel-in-progress: false
+
 permissions:
   actions: read
   contents: read
+
 jobs:
   release-gate:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Require all five successful CI workflows for one commit
+      - name: Require all five successful push workflows for the current main commit
         id: gate
         uses: actions/github-script@v7
         with:
           script: |
-            const sha = context.sha;
+            const sha = context.payload.workflow_run?.head_sha ?? context.sha;
+            const repo = context.repo;
             const required = [
               'RepairLens verification',
               'RepairLens container verification',
@@ -26,22 +39,51 @@ jobs:
               'RepairLens PostgreSQL verification',
               'RepairLens Playwright E2E',
             ];
-            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
-              owner: context.repo.owner, repo: context.repo.repo,
-              head_sha: sha, per_page: 100
-            });
-            for (const name of required) {
-              const passing = runs.some(run => run.name === name && run.conclusion === 'success' && run.head_sha === sha);
-              if (!passing) core.setFailed(`Missing successful ${name} for ${sha}`);
+            const deadline = Date.now() + 20 * 60 * 1000;
+            while (Date.now() < deadline) {
+              const { data: main } = await github.rest.repos.getBranch({ ...repo, branch: 'main' });
+              if (main.commit.sha !== sha) {
+                core.notice(`Skipping superseded commit ${sha}.`);
+                return;
+              }
+
+              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                ...repo, branch: 'main', event: 'push', head_sha: sha, per_page: 100,
+              });
+              const latest = required.map(name => runs
+                .filter(run => run.name === name && run.head_sha === sha)
+                .sort((a, b) => b.id - a.id)[0]);
+              const failed = latest.find(run => run?.status === 'completed' && run.conclusion !== 'success');
+              if (failed) {
+                core.setFailed(`${failed.name}: ${failed.conclusion} for ${sha}`);
+                return;
+              }
+              if (latest.every(run => run?.conclusion === 'success')) {
+                core.setOutput('sha', sha);
+                return;
+              }
+              await new Promise(resolve => setTimeout(resolve, 15000));
             }
-            core.setOutput('sha', sha);
-      - name: Deploy only if a Render deploy hook is explicitly configured
+            core.setFailed(`Timed out waiting for all five workflows for ${sha}`);
+
+      - name: Request Render deployment of the verified commit
+        if: steps.gate.outputs.sha != ''
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          VERIFIED_SHA: ${{ steps.gate.outputs.sha }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK not configured; gated release is verified but no deployment is triggered."
-            exit 0
+            echo "::error::Configure the RENDER_DEPLOY_HOOK repository secret."
+            exit 1
           fi
-          curl --fail --show-error --silent --retry 2 --request POST "$RENDER_DEPLOY_HOOK"
-          echo "Render deploy hook accepted; verify the resulting Render deployment separately."
+          if [[ "$RENDER_DEPLOY_HOOK" == *\?* ]]; then
+            separator='&'
+          else
+            separator='?'
+          fi
+          if ! curl --silent --fail --max-time 30 --request POST \
+            --output /dev/null "${RENDER_DEPLOY_HOOK}${separator}ref=${VERIFIED_SHA}"; then
+            echo "::error::Render did not accept the deployment request."
+            exit 1
+          fi
+          echo "Render accepted the deployment request for ${VERIFIED_SHA}. Check its status in Render."
