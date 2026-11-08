@@ -19,7 +19,9 @@ Render's official free tier offers a Docker web service and a separate free mana
 
 ## CI/CD
 
-The Blueprint's `autoDeployTrigger: commit` instructs Render to deploy new commits. GitHub Actions runs checks independently; **automatic Render deploy is not currently gated on all GitHub checks**. Do not claim gated CD until that dependency is implemented and verified. For safer demonstration, pause automatic deploys in Render until checks are green.
+The Blueprint disables Render's built-in automatic deploy. In Render, copy the web service Deploy Hook URL and save it in GitHub under Settings → Secrets and variables → Actions as the repository secret `RENDER_DEPLOY_HOOK`. Keep the URL private.
+
+After a successful Playwright push run on `main`, the release workflow waits for the other four verification workflows for that SHA. It submits that exact SHA to Render only after all five pass. The workflow also supports manual dispatch on `main`. Verify the commit and successful deployment in Render Events, then check `/api/health` for PostgreSQL. A successful hook request alone does not confirm a live deployment.
 
 ## Security and billing
 
