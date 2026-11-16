@@ -1,0 +1,58 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: RepairLens AI on-call
+    receivers:
+      - uid: repairlens-oncall
+        type: webhook
+        settings:
+          url: http://oncall:8080/alerts
+          httpMethod: POST
+        disableResolveMessage: false
+policies:
+  - orgId: 1
+    receiver: RepairLens AI on-call
+    group_by: [alertname, deployment_environment]
+    group_wait: 10s
+    group_interval: 1m
+    repeat_interval: 1h
+groups:
+  - orgId: 1
+    name: RepairLens API
+    folder: RepairLens
+    interval: 15s
+    rules:
+      - uid: repairlens-api-server-errors
+        title: RepairLens API error spike
+        condition: B
+        noDataState: OK
+        execErrState: Error
+        for: 15s
+        labels:
+          severity: warning
+          service: repairlens
+        annotations:
+          summary: Three or more API 5xx responses within five minutes
+          description: Review recent API error logs and their correlated traces.
+          __dashboardUid__: repairlens-observability
+          __panelId__: "5"
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: prometheus
+            model:
+              datasource: {type: prometheus, uid: prometheus}
+              intervalMs: 1000
+              maxDataPoints: 43200
+              expr: sum by (deployment_environment) (increase(repairlens_api_server_errors_total[5m]))
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange: {from: 0, to: 0}
+            datasourceUid: __expr__
+            model:
+              datasource: {type: __expr__, uid: __expr__}
+              type: math
+              expression: '$A >= 3'
+              refId: B
