@@ -118,3 +118,7 @@ npm run test:parity
 - [Engineering integration evidence](_docs/engineer-05.md), [independent integration QA](_docs/qa-05.md)
 
 SQLite via SQL.js is a bounded, single-process coursework implementation with whole-state transactions, not a multi-instance marketplace. No payments, chat, email recovery, or deployment is included. A server running in an agent workspace is not a public website accessible from your computer. Run these commands locally. Historical links may use `repairlens`; GitHub currently redirects that repository to `mvp`.
+
+## DevOps and Observability
+
+See [environment promotion and the observability demo](_docs/observability.md).

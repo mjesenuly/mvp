@@ -1,10 +1,6 @@
-name: RepairLens release gate
+name: Promote RepairLens to production
 
 on:
-  workflow_run:
-    workflows: [RepairLens Playwright E2E]
-    branches: [main]
-    types: [completed]
   workflow_dispatch:
 
 concurrency:
@@ -17,20 +13,19 @@ permissions:
 
 jobs:
   release-gate:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_repository.full_name == github.repository)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    environment:
+      name: production
+      url: https://repairlens-mvp.onrender.com
+    timeout-minutes: 45
     steps:
       - name: Require all five successful push workflows for the current main commit
         id: gate
         uses: actions/github-script@v7
         with:
           script: |
-            const sha = context.payload.workflow_run?.head_sha ?? context.sha;
+            const sha = context.sha;
             const repo = context.repo;
             const required = [
               'RepairLens verification',
@@ -43,7 +38,7 @@ jobs:
             while (Date.now() < deadline) {
               const { data: main } = await github.rest.repos.getBranch({ ...repo, branch: 'main' });
               if (main.commit.sha !== sha) {
-                core.notice(`Skipping superseded commit ${sha}.`);
+                core.setFailed(`${sha} is no longer main HEAD. Run promotion again from main.`);
                 return;
               }
 
@@ -66,16 +61,40 @@ jobs:
             }
             core.setFailed(`Timed out waiting for all five workflows for ${sha}`);
 
-      - name: Request Render deployment of the verified commit
-        if: steps.gate.outputs.sha != ''
+      - name: Verify development and promote the same commit
         env:
+          GH_TOKEN: ${{ github.token }}
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           VERIFIED_SHA: ${{ steps.gate.outputs.sha }}
+          DEV_URL: ${{ vars.REPAIRLENS_DEV_URL || 'https://repairlens-dev.onrender.com' }}
+          PROD_URL: ${{ vars.REPAIRLENS_PROD_URL || 'https://repairlens-mvp.onrender.com' }}
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "::error::Configure the RENDER_DEPLOY_HOOK repository secret."
+          set -euo pipefail
+          if [[ -z "$RENDER_DEPLOY_HOOK" ]]; then
+            echo "::error::Configure the production RENDER_DEPLOY_HOOK secret."
             exit 1
           fi
+
+          wait_for_commit() {
+            local base_url="$1" expected_storage="$2" deadline=$((SECONDS + $3))
+            local headers="$RUNNER_TEMP/repairlens-headers" body="$RUNNER_TEMP/repairlens-health"
+            while (( SECONDS < deadline )); do
+              if curl --silent --fail --max-time 60 --dump-header "$headers" \
+                --output "$body" "${base_url%/}/api/health" &&
+                tr -d '\r' < "$headers" | grep -iqx "x-repairlens-commit: ${VERIFIED_SHA}" &&
+                jq -e --arg storage "$expected_storage" \
+                  '.status == "ok" and .storage == $storage' "$body" >/dev/null; then
+                return 0
+              fi
+              sleep 10
+            done
+            echo "::error::${base_url} did not serve ${VERIFIED_SHA} with healthy ${expected_storage} storage."
+            return 1
+          }
+
+          wait_for_commit "$DEV_URL" sqlite 300
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)" == "$VERIFIED_SHA" ]] ||
+            { echo "::error::Main changed during verification. Run promotion again."; exit 1; }
           if [[ "$RENDER_DEPLOY_HOOK" == *\?* ]]; then
             separator='&'
           else
@@ -83,7 +102,8 @@ jobs:
           fi
           if ! curl --silent --fail --max-time 30 --request POST \
             --output /dev/null "${RENDER_DEPLOY_HOOK}${separator}ref=${VERIFIED_SHA}"; then
-            echo "::error::Render did not accept the deployment request."
+            echo "::error::Render did not accept the production deployment request."
             exit 1
           fi
-          echo "Render accepted the deployment request for ${VERIFIED_SHA}. Check its status in Render."
+          wait_for_commit "$PROD_URL" postgres 900
+          echo "Production is healthy and serves verified commit ${VERIFIED_SHA}." >> "$GITHUB_STEP_SUMMARY"

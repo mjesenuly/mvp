@@ -45,3 +45,43 @@ jobs:
         run: |
           docker compose --env-file .env.test down --volumes --remove-orphans
           rm -f .integration-state.json
+  observability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      COMPOSE_PROJECT_NAME: repairlens-observability-${{ github.run_id }}-${{ github.run_attempt }}
+      BASE_URL: http://127.0.0.1:3000
+      INTEGRATION_STATE_FILE: .integration-state.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Start the instrumented RepairLens stack
+        run: |
+          compose=(docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml)
+          "${compose[@]}" config --quiet
+          "${compose[@]}" up --build --detach
+      - name: Verify telemetry, Grafana alert and AI response
+        run: bash scripts/test-observability-compose.sh
+      - name: Show Grafana diagnostics on failure
+        if: failure()
+        run: docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml logs --no-color --tail 100 observability
+      - name: Capture dashboard, alert and AI responder evidence
+        if: always()
+        run: |
+          mkdir -p observability-evidence
+          docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml \
+            logs --no-color app observability oncall model-pull > observability-evidence/runtime.log
+          curl -fsS http://127.0.0.1:3001/api/dashboards/uid/repairlens-observability \
+            -o observability-evidence/dashboard.json || true
+          curl -fsS http://127.0.0.1:3001/api/v1/provisioning/alert-rules/repairlens-api-server-errors \
+            -o observability-evidence/alert-rule.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: observability-evidence
+          path: observability-evidence/
+      - name: Remove the disposable CI stack
+        if: always()
+        run: docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml down --volumes
