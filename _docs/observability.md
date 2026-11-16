@@ -10,7 +10,7 @@
 
 In [GitHub Actions](https://github.com/mjesenuly/mvp/actions/workflows/release-gate.yml), choose **Promote RepairLens to production → Run workflow → main**. It waits for five CI workflows for that exact commit and verifies that development is serving the same SHA with healthy SQLite. It then requests a Render deploy with that SHA and waits for production to serve it with healthy PostgreSQL. The SHA is available in the `X-RepairLens-Commit` health response header on Render. The workflow uses the existing production deploy hook in the GitHub Actions secret `RENDER_DEPLOY_HOOK`. Render production auto-deploy must remain off.
 
-Development data can reset after a redeploy or instance replacement. To exercise workshop approval on hosted development, generate dedicated `ADMIN_EMAIL` and `ADMIN_PASSWORD` values in that Render service and deploy into a fresh development SQLite file. The Compose demo has disposable fixture credentials already configured via `.env.test`.
+Development data can reset after a redeploy or instance replacement. Use the dedicated `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the development service's Render environment settings to exercise workshop approval. The Compose demo has disposable fixture credentials already configured via `.env.test`.
 
 ## Run the complete observability demo
 
@@ -51,7 +51,7 @@ Inspect the response with the following command.
 docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml logs oncall
 ```
 
-Run the demo only against the disposable local stack. If interrupted while PostgreSQL is stopped, start it again with `docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml up -d db`. GitHub Actions runs the same demo and attaches the dashboard, alert rule, and runtime logs as `observability-evidence`.
+Run the demo only against the disposable local stack. If interrupted while PostgreSQL is stopped, start it again with `docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml up -d db`, then restart the app container. GitHub Actions runs the same demo and attaches the dashboard, alert rule, and runtime logs as `observability-evidence`.
 
 ## Connect hosted telemetry
 

@@ -24,6 +24,7 @@ test('exports correlated metrics, traces and logs through OTLP', { timeout: 35_0
       PORT: '0', STORAGE: 'memory',
       OTEL_EXPORTER_OTLP_ENDPOINT: `http://127.0.0.1:${collector.address().port}`,
       DEPLOYMENT_ENVIRONMENT: 'development',
+      OTEL_TRACES_SAMPLER: 'always_on',
       RENDER_GIT_COMMIT: 'a'.repeat(40),
     },
     stdio: ['ignore', 'pipe', 'inherit'],

@@ -61,5 +61,6 @@ for _ in {1..8}; do
   [[ "$status" == 503 ]]
 done
 wait_until "Grafana alert followed by a model-generated response" 180 response_received
-"${compose[@]}" up --detach db
+"${compose[@]}" up --detach --wait db
+"${compose[@]}" restart app
 wait_until "PostgreSQL recovery" 120 app_ready

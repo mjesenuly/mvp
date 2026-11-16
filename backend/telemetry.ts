@@ -1,5 +1,4 @@
-import { context, SpanKind, SpanStatusCode, metrics, trace } from '@opentelemetry/api';
-import { logs, SeverityNumber } from '@opentelemetry/api-logs';
+import { context, logs, metrics, SeverityNumber, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
