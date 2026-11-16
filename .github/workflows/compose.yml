@@ -64,6 +64,9 @@ jobs:
           "${compose[@]}" up --build --detach
       - name: Verify telemetry, Grafana alert and AI response
         run: bash scripts/test-observability-compose.sh
+      - name: Show Grafana diagnostics on failure
+        if: failure()
+        run: docker compose --env-file .env.test -f compose.yaml -f compose.observability.yaml logs --no-color --tail 100 observability
       - name: Capture dashboard, alert and AI responder evidence
         if: always()
         run: |
