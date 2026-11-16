@@ -43,7 +43,7 @@ Run the full smoke check on a fresh local demo stack.
 bash scripts/test-observability-compose.sh
 ```
 
-The script runs the business journey, verifies ingestion of all three signals, then briefly stops only the local database and requests the health endpoint to produce actual 503 responses. Grafana fires after three or more API 5xx responses in a rolling five-minute window, with a 15-second pending period. The alert reaches the on-call service by webhook. The service passes the environment and metric count to Ollama, then logs an `incident_triage` record with the model response. Resolution produces an `incident_resolved` record. The agent recommends checks for a human operator and has no deployment or database credentials.
+The script runs the business journey, verifies ingestion of all three signals, then briefly stops only the local database and requests the health endpoint to produce actual 503 responses. Grafana fires after three or more API 5xx responses in a rolling five-minute window, with a 20-second pending period. The alert reaches the on-call service by webhook. The service passes the environment and metric count to Ollama, then logs an `incident_triage` record with the model response. Resolution produces an `incident_resolved` record. The agent recommends checks for a human operator and has no deployment or database credentials.
 
 Inspect the response with the following command.
 

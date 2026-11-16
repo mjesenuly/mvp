@@ -20,14 +20,14 @@ groups:
   - orgId: 1
     name: RepairLens API
     folder: RepairLens
-    interval: 15s
+    interval: 10s
     rules:
       - uid: repairlens-api-server-errors
         title: RepairLens API error spike
         condition: B
         noDataState: OK
         execErrState: Error
-        for: 15s
+        for: 20s
         labels:
           severity: warning
           service: repairlens
